@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>رادار اللوحات</title>
+<meta name="description" content="بوابة فحص صوتي للوحات السيارات السعودية">
+<meta name="theme-color" content="#1E88E5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="رادار اللوحات">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<style>
+  html,body{margin:0; padding:0; background:#EAF3FE; font-family:'Tajawal',sans-serif}
+  #plates-app{
+    --bg:#EAF3FE; --panel:#FFFFFF; --panel2:#F4F9FF; --border:#DCEAFB;
+    --text:#152A46; --muted:#6E88AC; --accent:#2F80ED; --accent2:#17C3B2; --accent-ink:#ffffff;
+    --header-grad:linear-gradient(120deg,#1E88E5,#17C3B2);
+    --wanted:#F2994A; --wanted-bg:#FDEFE1; --wanted-brd:#F7D9B8;
+    --safe:#27AE60; --safe-bg:#E6F7ED; --safe-brd:#BEE8CE;
+    --plate-border:#0B6E4F; --shadow:0 6px 18px rgba(30,80,160,.08);
+  }
+  #plates-app.theme-dark{
+    --bg:#0A0F1C; --panel:#121A2B; --panel2:#182238; --border:#24304A;
+    --text:#EAF1FB; --muted:#8CA0C4; --accent:#4DA3FF; --accent2:#1FD3B8; --accent-ink:#071018;
+    --header-grad:linear-gradient(120deg,#123A63,#0F4C4A);
+    --wanted:#F2994A; --wanted-bg:rgba(242,153,74,.15); --wanted-brd:rgba(242,153,74,.4);
+    --safe:#2ED8A7; --safe-bg:rgba(46,216,167,.14); --safe-brd:rgba(46,216,167,.4);
+    --shadow:0 6px 18px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  #plates-app{
+    direction:rtl; font-family:'Tajawal',sans-serif; background:var(--bg); color:var(--text);
+    min-height:100vh; padding:0; margin:0; border-radius:18px; overflow:hidden;
+    border:1px solid var(--border); position:relative; transition:background .2s,color .2s;
+  }
+  #plates-app h1,#plates-app h2,#plates-app .disp{font-family:'Cairo',sans-serif}
+  .bidi{unicode-bidi:plaintext}
+  .ltr{direction:ltr; unicode-bidi:isolate; display:inline-block}
+  .muted{color:#93a7c6}
+
+  .pa-header{
+    background:var(--header-grad); padding:20px 20px 26px; border-radius:0 0 26px 26px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; position:relative;
+    box-shadow:0 8px 22px rgba(20,90,180,.25);
+  }
+  .pa-title{display:flex; align-items:center; gap:10px}
+  .pa-title .radar{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.18);
+    display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0; backdrop-filter:blur(4px)}
+  .pa-title h1{font-size:19px;margin:0;font-weight:800;letter-spacing:.3px; color:#fff}
+  .pa-title p{margin:2px 0 0;font-size:12px;color:rgba(255,255,255,.85)}
+  .header-actions{display:flex; align-items:center; gap:8px}
+  .upload-btn{
+    background:#fff; color:var(--accent); font-family:'Cairo',sans-serif; font-weight:700;
+    padding:10px 16px; border-radius:12px; font-size:13px; cursor:pointer; border:none;
+    display:flex; align-items:center; gap:6px; transition:filter .15s; box-shadow:var(--shadow);
+  }
+  .upload-btn:hover{filter:brightness(.97)}
+  .upload-btn input{display:none}
+  .icon-btn{
+    width:40px; height:40px; border-radius:12px; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3);
+    color:#fff; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);
+  }
+  .icon-btn:hover{background:rgba(255,255,255,.28)}
+
+  .pa-tabs{display:flex; gap:6px; padding:14px 16px 0; background:var(--bg); overflow-x:auto}
+  .pa-tab{
+    padding:10px 16px; font-family:'Cairo',sans-serif; font-weight:700; font-size:13px; color:var(--muted);
+    background:var(--panel); border:1px solid var(--border); cursor:pointer; border-radius:14px; white-space:nowrap;
+    display:flex; align-items:center; gap:6px; transition:all .15s; box-shadow:var(--shadow);
+  }
+  .pa-tab.active{color:#fff; background:var(--header-grad); border-color:transparent}
+  .pa-tab .cnt{background:var(--panel2); color:var(--muted); border-radius:20px; padding:1px 8px; font-size:11px}
+  .pa-tab.active .cnt{background:rgba(255,255,255,.25); color:#fff}
+  .pa-body{padding:20px 16px 90px; min-height:420px}
+  .pa-panel{display:none}
+  .pa-panel.active{display:block}
+
+  /* settings panel */
+  .settings-panel{
+    position:absolute; left:16px; top:74px; width:280px; background:var(--panel); border:1px solid var(--border);
+    border-radius:16px; padding:16px; z-index:80; display:none; box-shadow:0 14px 34px rgba(20,50,100,.2);
+  }
+  .settings-panel.show{display:block}
+  .settings-panel h3{margin:0 0 12px; font-size:14px}
+  .settings-row{display:flex; flex-direction:column; gap:6px; margin-bottom:12px}
+  .settings-row.inline{flex-direction:row; align-items:center; justify-content:space-between}
+  .settings-row label{font-size:12px; color:var(--muted)}
+  .settings-row input[type=text],.settings-row input[type=password]{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:8px 10px; border-radius:8px; font-size:13px;
+  }
+  .settings-row button{background:var(--accent); color:#fff; border:none; font-family:'Cairo',sans-serif; font-weight:700;
+    padding:7px 12px; border-radius:8px; font-size:12px; cursor:pointer; margin-top:6px}
+  .settings-row .ghost-btn{background:transparent; border:1px solid var(--border); color:var(--muted)}
+  hr{border:none; border-top:1px solid var(--border); margin:12px 0}
+
+  /* lock overlay */
+  .lock-overlay{position:absolute; inset:0; background:var(--bg); z-index:200; display:flex; align-items:center; justify-content:center}
+  .lock-box{text-align:center; max-width:260px}
+  .lock-icon{font-size:38px; margin-bottom:8px}
+  .lock-box h2{font-size:16px; margin:0 0 4px}
+  .lock-box p{font-size:12px; color:var(--muted); margin:0 0 16px}
+  .lock-box input{width:100%; text-align:center; letter-spacing:6px; font-size:18px; background:var(--panel2);
+    border:1px solid var(--border); color:var(--text); padding:10px; border-radius:10px; margin-bottom:10px}
+  .lock-box button{width:100%; background:var(--header-grad); color:#fff; border:none; font-family:'Cairo',sans-serif;
+    font-weight:800; padding:10px; border-radius:10px; cursor:pointer}
+  .lock-err{color:var(--wanted); font-size:12px; margin-top:8px; min-height:14px}
+
+  /* voice tab */
+  .voice-card{background:var(--panel); border-radius:22px; padding:24px 18px; box-shadow:var(--shadow); max-width:560px; margin:0 auto 18px}
+  .mic-wrap{display:flex; flex-direction:column; align-items:center; gap:14px; padding:6px 0 22px}
+  .mic-btn{
+    width:100px; height:100px; border-radius:50%; border:none; cursor:pointer;
+    background:var(--header-grad); box-shadow:0 10px 26px rgba(30,120,200,.3); font-size:36px; color:#fff;
+    display:flex; align-items:center;justify-content:center; transition:transform .15s;
+  }
+  .mic-btn:active{transform:scale(.95)}
+  .mic-btn.listening{animation:pulse 1.1s infinite; background:linear-gradient(120deg,#F2994A,#F25C4A)}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(242,153,74,.45)}
+    70%{box-shadow:0 0 0 22px rgba(242,153,74,0)}
+    100%{box-shadow:0 0 0 0 rgba(242,153,74,0)}
+  }
+  .mic-status{font-size:13px; color:var(--muted); font-family:'Cairo',sans-serif; font-weight:700; text-align:center}
+  .heard-line{font-size:12px; color:var(--accent); background:var(--panel2); border:1px solid var(--border); border-radius:20px; padding:6px 16px; margin-top:2px}
+  .parse-preview{font-size:12px; color:var(--muted); text-align:center; margin:8px 0 4px}
+  .parse-preview b{color:var(--text)}
+  .session-table-header{display:grid; grid-template-columns:1fr 1fr 1fr; background:var(--header-grad); color:#fff;
+    font-family:'Cairo',sans-serif; font-weight:800; font-size:12px; padding:10px 14px; text-align:center}
+  .session-row{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; padding:10px 14px; border-bottom:1px solid var(--border);
+    background:var(--panel); font-size:13px; text-align:center; align-items:center}
+  .session-row:last-child{border-bottom:none}
+  .session-row.danger{background:var(--wanted-bg)}
+  .session-row.safe{background:var(--safe-bg)}
+  .hint-box{
+    background:var(--panel2); border:1px solid var(--border); border-radius:14px; padding:14px 16px;
+    font-size:13px; color:var(--muted); line-height:1.9; margin:0 0 18px;
+  }
+  .hint-box b{color:var(--text)}
+  .search-row{display:flex; gap:8px; margin:0 0 4px}
+  .search-row input{
+    flex:1; background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    padding:12px 14px; border-radius:12px; font-family:'Tajawal',sans-serif; font-size:14px;
+  }
+  .search-row input:focus{outline:none; border-color:var(--accent)}
+  .search-row button{
+    background:var(--header-grad); border:none; color:#fff; padding:0 20px;
+    border-radius:12px; font-family:'Cairo',sans-serif; font-weight:700; cursor:pointer;
+  }
+  .session-bar{display:flex; align-items:center; justify-content:center; gap:10px; margin-top:14px}
+  .session-pill{background:var(--header-grad); color:#fff; font-family:'Cairo',sans-serif; font-weight:800; font-size:12px; padding:8px 16px; border-radius:20px}
+  .session-btn{background:var(--panel2); border:1px solid var(--border); color:var(--text); font-family:'Cairo',sans-serif; font-weight:700; font-size:12px; padding:8px 14px; border-radius:20px; cursor:pointer}
+  .session-btn:hover{border-color:var(--accent)}
+  #pa-result{max-width:560px; margin:16px auto 0}
+
+  .result-card{border-radius:18px; padding:20px; border:1px solid var(--border); background:var(--panel); text-align:center; box-shadow:var(--shadow)}
+  .result-card.danger{background:var(--wanted-bg); border-color:var(--wanted-brd)}
+  .result-card.safe{background:var(--safe-bg); border-color:var(--safe-brd)}
+  .result-msg{font-family:'Cairo',sans-serif; font-weight:800; font-size:16px; margin:12px 0 4px}
+  .result-msg.danger{color:var(--wanted)}
+  .result-msg.safe{color:var(--safe)}
+  .result-sub{font-size:12px; color:var(--muted); margin-bottom:12px}
+  .match-list{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px}
+
+  /* plate chip - signature element (Saudi style) */
+  .plate-chip{
+    display:inline-flex; flex-direction:column; align-items:center; gap:3px;
+    background:#f9faf8; border:4px solid var(--plate-border); border-radius:10px;
+    padding:6px 14px 8px; min-width:120px; position:relative; box-shadow:0 3px 0 rgba(0,0,0,.18);
+  }
+  .plate-chip .flag{position:absolute; top:-9px; right:8px; background:var(--plate-border); color:#fff;
+    font-size:9px; font-family:'Cairo',sans-serif; padding:1px 6px; border-radius:4px}
+  .plate-chip .p-num{font-family:'Cairo',sans-serif; font-weight:800; font-size:19px; color:#0c1220; direction:ltr; letter-spacing:1px}
+  .plate-chip .p-let{font-family:'Cairo',sans-serif; font-weight:700; font-size:13px; color:#243352; letter-spacing:4px}
+  .plate-chip .p-tag{margin-top:4px; font-size:10px; font-family:'Cairo',sans-serif; font-weight:800; padding:1px 8px; border-radius:20px}
+  .p-tag.danger{background:var(--wanted); color:#3a1f00}
+  .p-tag.safe{background:var(--safe); color:#04270f}
+
+  .mini-pill{display:inline-block; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; margin:2px; font-family:'Cairo',sans-serif; border:1px solid transparent}
+  .mini-pill.danger{background:var(--wanted-bg); color:var(--wanted); border-color:var(--wanted-brd)}
+  .mini-pill.safe{background:var(--safe-bg); color:var(--safe); border-color:var(--safe-brd)}
+
+  /* batch (multi-plate) results table */
+  .list-table{border-radius:16px; overflow:hidden; box-shadow:var(--shadow); background:var(--panel)}
+  .batch-header{display:grid; grid-template-columns:1fr 2fr; background:var(--header-grad); color:#fff;
+    font-family:'Cairo',sans-serif; font-weight:800; font-size:12px; padding:10px 14px}
+  .batch-row{display:grid; grid-template-columns:1fr 2fr; gap:10px; padding:10px 14px; border-bottom:1px solid var(--border); background:var(--panel); font-size:12px; align-items:center}
+  .batch-row:last-child{border-bottom:none}
+
+  /* card-style plate list (matches the reference design) */
+  .pcard-list{display:flex; flex-direction:column; gap:14px}
+  .pcard{background:var(--panel); border-radius:16px; padding:16px 18px; box-shadow:var(--shadow); border-right:5px solid var(--border)}
+  .pcard.danger{border-right-color:var(--wanted)}
+  .pcard.safe{border-right-color:var(--safe)}
+  .pcard-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px}
+  .pcard-status{font-family:'Cairo',sans-serif; font-weight:800; font-size:12px; display:flex; align-items:center; gap:4px}
+  .pcard-status.danger{color:var(--wanted)}
+  .pcard-status.safe{color:var(--safe)}
+  .pcard-plate{font-family:'Cairo',sans-serif; font-weight:800; font-size:21px; margin-bottom:4px}
+  .pcard-letters{letter-spacing:3px; margin-right:6px}
+  .pcard-sub{font-size:12px; color:var(--muted); margin-bottom:3px}
+  .pcard-time{font-size:11px; color:#93a7c6; margin-bottom:12px}
+  .pcard-actions{display:flex; gap:8px; flex-wrap:wrap}
+  .pcard-btn{border:1.5px solid var(--border); background:var(--panel2); color:var(--text); font-family:'Cairo',sans-serif; font-weight:700; font-size:12px;
+    padding:8px 14px; border-radius:20px; cursor:pointer; display:inline-flex; align-items:center; gap:5px}
+  .pcard-btn:hover{filter:brightness(.97)}
+  .pcard-btn.danger-outline{border-color:var(--wanted-brd); color:var(--wanted); background:var(--wanted-bg)}
+  .pcard-btn.whatsapp-outline{border-color:#25D36688; color:#128C4A; background:#E9F9F0}
+  .pcard-edit{display:flex; flex-direction:column; gap:8px; margin-bottom:12px}
+  .pcard-edit input{background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:8px 10px; border-radius:10px; font-size:12px}
+  .pcard-edit .edit-row{display:flex; gap:8px}
+  .pcard-edit .loc-btn{flex:1; background:var(--panel2); border:1px dashed var(--border); color:var(--accent); font-size:11px; padding:7px; border-radius:10px; cursor:pointer; font-family:'Cairo',sans-serif; font-weight:700}
+  .pcard-edit .edit-btns{display:flex; gap:6px}
+  .confirm-inline{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+  .inline-upload{display:block; width:100%; text-align:center; border:2px dashed var(--accent); color:var(--accent); background:var(--panel2);
+    border-radius:14px; padding:15px; font-family:'Cairo',sans-serif; font-weight:800; font-size:13px; cursor:pointer; margin-bottom:18px}
+  .inline-upload:hover{background:var(--panel)}
+  .status-select{background:var(--panel2); border:1px solid var(--border); color:var(--text); font-size:12px;
+    border-radius:8px; padding:6px 8px; font-family:'Tajawal',sans-serif; flex:1}
+  .empty-state{color:var(--muted); font-size:13px; text-align:center; padding:40px 10px; border:1px dashed var(--border); border-radius:16px; width:100%; background:var(--panel)}
+
+  .list-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px}
+  .list-head h2{font-size:15px; margin:0}
+  .list-head .subtitle{font-size:12px; color:var(--muted); margin-top:2px}
+  .dl-btn{background:var(--panel); border:1px solid var(--border); color:var(--text); font-family:'Cairo',sans-serif;
+    font-weight:700; font-size:12px; padding:9px 14px; border-radius:10px; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:var(--shadow)}
+  .dl-btn:hover{border-color:var(--accent); color:var(--accent)}
+  .print-btn{border-radius:24px; padding:10px 18px; font-family:'Cairo',sans-serif; font-weight:800; font-size:12px; cursor:pointer;
+    background:var(--panel); border:1.5px solid var(--border); box-shadow:var(--shadow); display:flex; align-items:center; gap:6px; color:var(--text)}
+  .print-btn:hover{border-color:var(--accent); color:var(--accent)}
+  .filter-row{margin-bottom:16px}
+  .filter-row input{width:100%; max-width:320px; background:var(--panel); border:1px solid var(--border); color:var(--text);
+    padding:10px 12px; border-radius:10px; font-size:13px; box-shadow:var(--shadow)}
+  .filter-row input:focus{outline:none; border-color:var(--accent)}
+
+  /* stats + chart + pill downloads (comprehensive "all" view) */
+  .stats-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:14px; margin-bottom:22px}
+  .stat-box{background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:18px; text-align:center; box-shadow:var(--shadow)}
+  .stat-box .num{font-family:'Cairo',sans-serif; font-weight:800; font-size:24px; color:var(--accent)}
+  .stat-box .lbl{font-size:11px; color:var(--muted); margin-top:4px}
+  .report-actions{display:flex; gap:10px; flex-wrap:wrap}
+  .chart-card{background:var(--panel); border-radius:16px; padding:18px; box-shadow:var(--shadow); margin-bottom:22px}
+  .chart-title{font-size:12px; color:var(--muted); text-align:center; margin-bottom:16px; font-family:'Cairo',sans-serif; font-weight:700}
+  .chart-bars{display:flex; align-items:flex-end; gap:14px; justify-content:center; flex-wrap:wrap}
+  .chart-bar-col{display:flex; flex-direction:column; align-items:center; gap:6px; width:44px}
+  .chart-bar-track{height:110px; width:100%; display:flex; align-items:flex-end}
+  .chart-bar{width:100%; background:linear-gradient(180deg,var(--accent2),var(--accent)); border-radius:8px 8px 0 0;
+    display:flex; align-items:flex-start; justify-content:center; color:#fff; font-size:11px; font-weight:800; font-family:'Cairo',sans-serif; padding-top:4px; min-height:18px}
+  .chart-hour{font-size:10px; color:var(--muted)}
+  .pill-row{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px}
+  .pill-btn{border-radius:24px; padding:10px 20px; font-family:'Cairo',sans-serif; font-weight:800; font-size:12px; cursor:pointer; background:var(--panel); box-shadow:var(--shadow)}
+  .pill-btn.blue{border:1.5px solid var(--accent); color:var(--accent)}
+  .pill-btn.amber{border:1.5px solid var(--wanted); color:var(--wanted)}
+  .pill-btn.green{border:1.5px solid var(--safe); color:var(--safe)}
+
+  /* log */
+  .log-row{display:grid; grid-template-columns:auto 1fr auto; gap:14px; align-items:center;
+    background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin-bottom:8px; box-shadow:var(--shadow)}
+  .log-time{font-size:11px; color:var(--muted); font-family:'Cairo',sans-serif; white-space:nowrap}
+  .log-mid{font-size:13px}
+  .log-type{font-size:10px; color:var(--accent); font-family:'Cairo',sans-serif; font-weight:700}
+  .log-by{font-size:10px; color:#93a7c6}
+  .log-tag{font-size:10px; font-family:'Cairo',sans-serif; font-weight:800; padding:2px 8px; border-radius:20px; white-space:nowrap}
+  .log-tag.danger{background:var(--wanted); color:#3a1f00}
+  .log-tag.safe{background:var(--safe); color:#04270f}
+
+  /* bottom quick nav */
+  .bottom-nav{position:absolute; left:0; right:0; bottom:0; background:var(--panel); border-top:1px solid var(--border);
+    display:flex; justify-content:space-around; padding:10px 6px; box-shadow:0 -6px 18px rgba(20,60,120,.08); z-index:60}
+  .bn-btn{background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--muted);
+    font-family:'Cairo',sans-serif; font-size:10px; font-weight:700; cursor:pointer; padding:2px 6px}
+  .bn-btn .bn-icon{font-size:18px}
+  .bn-btn.active{color:var(--accent)}
+
+  .toast{position:absolute; bottom:76px; left:50%; transform:translateX(-50%); background:var(--panel);
+    border:1px solid var(--border); color:var(--text); font-size:13px; padding:10px 16px; border-radius:12px;
+    box-shadow:0 10px 26px rgba(20,60,120,.25); opacity:0; transition:opacity .25s, transform .25s; pointer-events:none; z-index:150}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px)}
+  ::-webkit-scrollbar{height:6px;width:6px} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px}
+
+  @media print{
+    #plates-app .pa-header, #plates-app .pa-tabs, #plates-app .bottom-nav, #plates-app .toast,
+    #plates-app .filter-row, #plates-app .pcard-actions, #plates-app .inline-upload, #plates-app .pill-row,
+    #plates-app .print-btn, #plates-app .voice-card, #plates-app .settings-panel{ display:none !important; }
+    #plates-app{ border:none; border-radius:0; background:#fff; color:#000 }
+    #plates-app .pcard{ box-shadow:none; border:1px solid #ccc; break-inside:avoid }
+  }
+</style>
+
+</head>
+<body>
+<div id="plates-app">
+  <div class="pa-header">
+    <div class="pa-title">
+      <div class="radar">📡</div>
+      <div>
+        <h1>رادار اللوحات</h1>
+        <p>تعرف صوتي على أرقام وحروف اللوحات السعودية <span style="opacity:.6">• إصدار 2026-08-05</span></p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <label class="upload-btn">
+        ⬆️ رفع ملف إكسيل
+        <input type="file" id="pa-file-input" accept=".xlsx,.xls,.csv"/>
+      </label>
+      <button class="icon-btn" id="theme-toggle" title="الوضع الليلي">🌙</button>
+      <button class="icon-btn" id="settings-gear" title="الإعدادات">⚙️</button>
+    </div>
+    <div class="settings-panel" id="settings-panel">
+      <h3>⚙️ الإعدادات</h3>
+      <div class="settings-row">
+        <label>اسمك (يتسجل في السجل)</label>
+        <input type="text" id="set-username" placeholder="مثلاً: أحمد"/>
+      </div>
+      <div class="settings-row inline">
+        <label>نطق النتيجة بالصوت 🔈</label>
+        <input type="checkbox" id="set-tts"/>
+      </div>
+      <hr/>
+      <div class="settings-row">
+        <label>رقم سري لقفل التطبيق (٤ أرقام)</label>
+        <input type="password" id="set-pin" maxlength="6" inputmode="numeric" placeholder="مثلاً 1234"/>
+        <button id="save-pin-btn">حفظ الرقم السري</button>
+        <button class="ghost-btn" id="remove-pin-btn">إلغاء القفل</button>
+      </div>
+      <hr/>
+      <div class="settings-row">
+        <label>مسح كل اللوحات المسجلة (عشان ترفعي الملف من جديد نضيف)</label>
+        <button class="ghost-btn" id="clear-cars-btn" style="border-color:var(--wanted-brd); color:var(--wanted)">🗑️ مسح كل اللوحات</button>
+        <div id="clear-cars-confirm" style="display:none; margin-top:6px; font-size:12px; color:var(--muted)">
+          متأكد؟ ده هيمسح كل اللوحات المسجلة (مطلوبة وسليمة) نهائيًا.
+          <div style="display:flex; gap:6px; margin-top:6px">
+            <button id="clear-cars-yes" style="background:var(--wanted); color:#fff; border:none; border-radius:8px; padding:6px 12px; font-family:'Cairo',sans-serif; font-weight:700; font-size:12px; cursor:pointer">أيوه امسح</button>
+            <button id="clear-cars-no" class="ghost-btn" style="padding:6px 12px">لأ رجّع</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pa-tabs">
+    <button class="pa-tab active" data-tab="search">🎤 البحث الصوتي</button>
+    <button class="pa-tab" data-tab="wanted">🚨 المطلوبة <span class="cnt" id="cnt-wanted">0</span></button>
+    <button class="pa-tab" data-tab="safe">✅ السليمة <span class="cnt" id="cnt-safe">0</span></button>
+    <button class="pa-tab" data-tab="stats">📋 الكل</button>
+    <button class="pa-tab" data-tab="log">🗂 السجل <span class="cnt" id="cnt-log">0</span></button>
+  </div>
+
+  <div class="pa-body">
+    <!-- search tab -->
+    <div class="pa-panel active" id="panel-search">
+      <div class="voice-card">
+        <div class="hint-box">
+          <b>طريقة الاستخدام:</b> دوس على الميكروفون وقول رقم اللوحة وحروفها في نفس التسجيلة، زي
+          <b>"واحد اتنين تلاتة الف ب حاء"</b> — وقفة بسيطة بين رقم وحرف مش هتأثر، بس لما تخلص قول اللوحة دوس تاني عشان يبدأ يعالجها.
+          تقدر كمان تقول أكتر من لوحة كاملة ورا بعض في نفس التسجيلة (رقم وحروف، رقم وحروف، وهكذا)، وهيفرّق بينهم لوحده ويطلعلك نتيجة كل لوحة لوحدها.
+          تقدر تكتب أو تقول الحروف منفصلة (س ب ح) أو متصلة زي كلمة واحدة (سبح)، بالعربي أو بالإنجليزي (S B H أو SBH)، وهيفهمها صح.
+          لو قلت <b>أرقام بس</b> أو <b>حروف بس</b>، هيطلعلك كل اللوحات اللي فيها نفس الأرقام أو الحروف.
+          عايز تدوّر على أكتر من لوحة بالكتابة؟ اكتبهم في الخانة تحت وافصل بين كل لوحة والتانية بفاصلة ،، أو اكتبهم ورا بعض من غير فاصلة وهيفرّق بينهم لوحده برضو.
+          لو الميكروفون مش شغال في المتصفح، استخدم الكتابة بدل الصوت.
+          أي لوحة (رقم وحروف كاملين) بتقولها ومش موجودة في قائمة المطلوبة، هتتسجل تلقائي في قائمة السليمة.
+        </div>
+        <div class="mic-wrap">
+          <button class="mic-btn" id="pa-mic-btn">🎙️</button>
+          <div class="mic-status" id="pa-mic-status">دوس عشان تتكلم</div>
+          <div class="heard-line bidi" id="heard-line">سمعت: —</div>
+        </div>
+        <div class="search-row">
+          <input type="text" id="pa-text-input" list="pa-recent-list" placeholder="اكتب هنا، وافصل بين كل لوحة والتانية بفاصلة ،"/>
+          <datalist id="pa-recent-list"></datalist>
+          <button id="pa-search-btn">بحث 🔍</button>
+        </div>
+        <div class="parse-preview bidi" id="parse-preview">هفهم منها: — </div>
+        <div class="session-bar">
+          <button class="session-btn" id="undo-session-btn">↩️ تراجع</button>
+          <span class="session-pill">🚗 لوحات الجلسة: <b id="session-count">0</b></span>
+        </div>
+      </div>
+      <div id="pa-result"></div>
+      <div class="list-head" style="max-width:560px;margin:22px auto 12px"><h2>نتائج الفحص في الجلسة</h2></div>
+      <div class="list-table" style="max-width:560px;margin:0 auto">
+        <div class="session-table-header"><span>الحالة</span><span>الأرقام</span><span>الحروف</span></div>
+        <div id="session-table-body"></div>
+      </div>
+    </div>
+
+    <!-- wanted tab -->
+    <div class="pa-panel" id="panel-wanted">
+      <div class="list-head">
+        <h2>🚨 السيارات المطلوبة</h2>
+        <button class="dl-btn" id="dl-wanted">⬇️ تحميل الملف</button>
+      </div>
+      <button class="inline-upload" id="inline-upload-wanted">📁 رفع ملف إكسيل باللوحات</button>
+      <div class="filter-row"><input type="text" class="filter-input" data-status="مطلوبة" placeholder="دور برقم أو حرف..."/></div>
+      <div class="pcard-list" id="grid-مطلوبة"></div>
+    </div>
+
+    <!-- safe tab -->
+    <div class="pa-panel" id="panel-safe">
+      <div class="list-head">
+        <h2>✅ السيارات السليمة</h2>
+        <button class="dl-btn" id="dl-safe">⬇️ تحميل الملف</button>
+      </div>
+      <div class="filter-row"><input type="text" class="filter-input" data-status="سليمة" placeholder="دور برقم أو حرف..."/></div>
+      <div class="pcard-list" id="grid-سليمة"></div>
+    </div>
+
+    <!-- all/stats tab -->
+    <div class="pa-panel" id="panel-stats">
+      <div class="list-head">
+        <div>
+          <h2>📋 السجل الشامل</h2>
+          <div class="subtitle">كل السيارات المسجلة في القاعدة</div>
+        </div>
+        <button class="print-btn" id="print-btn">🖨️ طباعة / PDF</button>
+      </div>
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="chart-card">
+        <div class="chart-title">عدد اللوحات المفحوصة حسب الساعة (النهاردة)</div>
+        <div class="chart-bars" id="chart-bars"></div>
+      </div>
+      <div class="pill-row">
+        <button class="pill-btn blue" id="dl-all">⬇️ تنزيل الكل</button>
+        <button class="pill-btn amber" id="dl-wanted2">⬇️ تنزيل المطلوبة</button>
+        <button class="pill-btn green" id="dl-safe2">⬇️ تنزيل السليمة</button>
+      </div>
+      <div class="list-head"><h2>📄 تقارير النشاط</h2></div>
+      <div class="report-actions" style="margin-bottom:22px">
+        <button class="dl-btn" id="report-today">📄 تصدير تقرير اليوم</button>
+        <button class="dl-btn" id="report-week">📄 تصدير تقرير آخر ٧ أيام</button>
+      </div>
+      <div class="pcard-list" id="grid-all"></div>
+    </div>
+
+    <!-- log tab -->
+    <div class="pa-panel" id="panel-log">
+      <div class="list-head">
+        <h2>🗂 سجل النشاط (بحث وتعديلات)</h2>
+        <button class="dl-btn" id="dl-log">⬇️ تحميل السجل</button>
+      </div>
+      <div id="log-list"></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="bn-btn active" data-tab="search"><span class="bn-icon">🎤</span>الفحص</button>
+    <button class="bn-btn" data-tab="wanted"><span class="bn-icon">🚨</span>مطلوب</button>
+    <button class="bn-btn" data-tab="log"><span class="bn-icon">🗂</span>السجل</button>
+    <button class="bn-btn" data-tab="stats"><span class="bn-icon">📋</span>الكل</button>
+  </div>
+  <div class="toast" id="pa-toast"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+  const NUM_WORDS = {
+    'صفر':'0','زيرو':'0',
+    'واحد':'1','واحده':'1','واحدة':'1',
+    'اتنين':'2','إتنين':'2','اثنين':'2','إثنين':'2',
+    'تلاته':'3','تلاتة':'3','ثلاثة':'3','ثلاثه':'3',
+    'اربعة':'4','اربعه':'4','أربعة':'4','أربعه':'4',
+    'خمسة':'5','خمسه':'5',
+    'ستة':'6','سته':'6',
+    'سبعة':'7','سبعه':'7',
+    'تمانية':'8','تمانيه':'8','ثمانية':'8','ثمانيه':'8',
+    'تسعة':'9','تسعه':'9'
+  };
+  const LET_WORDS = {
+    'الف':'ا','ألف':'ا','أ':'ا','ا':'ا',
+    'باء':'ب','بيه':'ب','ب':'ب',
+    'حاء':'ح','ح':'ح',
+    'دال':'د','د':'د',
+    'راء':'ر','ر':'ر',
+    'سين':'س','س':'س',
+    'صاد':'ص','ص':'ص',
+    'طاء':'ط','ط':'ط',
+    'عين':'ع','ع':'ع',
+    'قاف':'ق','ق':'ق',
+    'كاف':'ك','ك':'ك',
+    'لام':'ل','ل':'ل',
+    'ميم':'م','م':'م',
+    'نون':'ن','ن':'ن',
+    'هاء':'ه','ه':'ه',
+    'واو':'و',
+    'ياء':'ي','ي':'ي'
+  };
+  const ARABIC_DIGITS = {'٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9'};
+  // Official Saudi plate Arabic↔Latin letter mapping (only these 17 Arabic letters appear on plates)
+  const EN_TO_AR = {A:'ا',B:'ب',J:'ح',D:'د',R:'ر',S:'س',X:'ص',T:'ط',E:'ع',G:'ق',K:'ك',L:'ل',Z:'م',N:'ن',H:'ه',U:'و',V:'ي'};
+  const VALID_PLATE_LETTERS = new Set(Object.values(EN_TO_AR));
+  const STATUSES = ['مطلوبة','سليمة'];
+  const TYPE_LABELS = {
+    'بحث':'بحث صوتي','تعديل حالة':'تغيير الحالة','تعديل بيانات':'تعديل الملاحظة أو الموقع',
+    'حذف':'حذف سيارة','استيراد ملف':'استيراد ملف إكسيل'
+  };
+
+  let cars = [];
+  let log = [];
+  let settings = {pin:null, ttsEnabled:false, userName:'', theme:'light'};
+  let editingId = null;
+  let confirmDeleteId = null;
+  let sessionCount = 0;
+  let sessionResults = [];
+
+  const $ = (sel,root)=> (root||document).querySelector(sel);
+  const $$ = (sel,root)=> Array.from((root||document).querySelectorAll(sel));
+  const app = $('#plates-app');
+
+  // window.storage only exists inside Claude's chat sandbox. On a real deployed site (like GitHub
+  // Pages) it doesn't exist, so every save/load was silently failing there. This falls back to
+  // localStorage so data actually persists once the app is deployed on its own.
+  const storageAPI = (window.storage && typeof window.storage.get === 'function') ? window.storage : {
+    async get(key){ const raw = localStorage.getItem('radar-elawhat:'+key); return raw===null ? null : {key, value: raw}; },
+    async set(key, value){ localStorage.setItem('radar-elawhat:'+key, value); return {key, value}; },
+    async delete(key){ localStorage.removeItem('radar-elawhat:'+key); return {key, deleted:true}; }
+  };
+
+  function toast(msg){
+    const t = $('#pa-toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2600);
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function spacedLetters(s){ return (s||'').split('').join(' '); }
+  function uid(){ return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+  function statusTagClass(status){
+    if(!status) return '';
+    if(status.includes('مطلوبة') && !status.includes('مش')) return 'danger';
+    if(status.includes('سليمة')) return 'safe';
+    return '';
+  }
+  function currentUser(){ return settings.userName && settings.userName.trim() ? settings.userName.trim() : 'مستخدم'; }
+  function updateSessionPill(){ $('#session-count').textContent = sessionCount; }
+  function fmtDate(ts){ return ts ? new Date(ts).toLocaleString('ar-EG') : ''; }
+
+  // ---------- storage ----------
+  async function loadSettings(){
+    try{
+      const r = await storageAPI.get('app-settings');
+      if(r) settings = Object.assign(settings, JSON.parse(r.value));
+    }catch(e){}
+  }
+  async function saveSettings(){
+    try{ await storageAPI.set('app-settings', JSON.stringify(settings)); }
+    catch(e){ toast('حصلت مشكلة في حفظ الإعدادات'); }
+  }
+  async function loadData(){
+    try{
+      const r = await storageAPI.get('plates-db');
+      cars = r ? JSON.parse(r.value) : [];
+    }catch(e){ cars = []; }
+    try{
+      const r2 = await storageAPI.get('spoken-log');
+      log = r2 ? JSON.parse(r2.value) : [];
+    }catch(e){ log = []; }
+    let changed=false;
+    cars.forEach(c=>{
+      if(!c.id){ c.id = uid(); changed=true; }
+      if(c.notes===undefined){ c.notes=''; changed=true; }
+      if(c.location===undefined){ c.location=''; changed=true; }
+      if(c.status==='تحت المراقبة'){ c.status='سليمة'; changed=true; }
+      if(!c.createdAt){ c.createdAt = Date.now(); changed=true; }
+    });
+    if(changed) await saveCars();
+    renderAll();
+  }
+  async function saveCars(){
+    try{ await storageAPI.set('plates-db', JSON.stringify(cars)); }
+    catch(e){ toast('حصلت مشكلة في حفظ القاعدة'); }
+  }
+  async function saveLog(){
+    try{ await storageAPI.set('spoken-log', JSON.stringify(log)); }
+    catch(e){ toast('حصلت مشكلة في حفظ السجل'); }
+  }
+  async function addLog(entry){
+    log.unshift(Object.assign({ts:Date.now(), time:new Date().toLocaleString('ar-EG'), by:currentUser()}, entry));
+    await saveLog();
+    renderLog();
+    renderCounts();
+    updateRecentList();
+  }
+
+  // ---------- sound / speech ----------
+  function beep(freq, duration, type){
+    try{
+      const ctx = new (window.AudioContext||window.webkitAudioContext)();
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.type = type||'sine'; osc.frequency.value = freq;
+      osc.connect(gain); gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+duration);
+      osc.stop(ctx.currentTime+duration);
+    }catch(e){}
+  }
+  function alertBeep(){ beep(880,0.16); setTimeout(()=>beep(880,0.16),200); }
+  function safeChime(){ beep(520,0.15); }
+  function speak(text){
+    if(!settings.ttsEnabled) return;
+    try{
+      if(!('speechSynthesis' in window)) return;
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ar-SA';
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  // ---------- parsing ----------
+  // Strips whitespace, Arabic diacritics, tatweel, and invisible characters that can sneak into
+  // real-world Excel data (and would otherwise make an identical-looking plate silently fail to
+  // match because of an invisible character difference).
+  function normLetters(s){
+    return (s||'')
+      .replace(/[\u064B-\u065F\u0670\u0640]/g,'') // diacritics + tatweel
+      .replace(/[\u200B-\u200F\uFEFF]/g,'')        // zero-width / bidi control chars
+      .replace(/\s+/g,'');
+  }
+  // Classifies one typed/spoken token into zero or more {type:'num'|'let', value} events. Shared by
+  // parseSpokenText (single plate / partial search) and segmentPlatesFromText (several plates said
+  // back to back) so both always agree on what counts as a number or a letter.
+  function classifyToken(raw){
+    let t = (raw||'').replace(/[\u064B-\u065F\u0670]/g,'').trim();
+    if(!t) return [];
+    if(/^[0-9]+$/.test(t)) return [{type:'num', value:t}];
+    if(/^[٠-٩]+$/.test(t)) return [{type:'num', value:t.split('').map(c=>ARABIC_DIGITS[c]||'').join('')}];
+    if(NUM_WORDS[t]!==undefined) return [{type:'num', value:NUM_WORDS[t]}];
+    if(LET_WORDS[t]!==undefined) return [{type:'let', value:LET_WORDS[t]}];
+    // English letters, said/typed either apart ("A") or joined together ("ABJ") — mapped via the
+    // official Saudi plate Arabic↔Latin table.
+    if(/^[A-Za-z]+$/.test(t)){
+      let out='', ok=true;
+      for(const ch of t.toUpperCase()){ if(EN_TO_AR[ch]){ out+=EN_TO_AR[ch]; } else { ok=false; break; } }
+      if(ok && out) return [{type:'let', value:out}];
+    }
+    // Arabic letters typed/said joined together as one word ("سبح" instead of "س ب ح")
+    if(/^[\u0621-\u064A]+$/.test(t) && t.length>1){
+      let out='', ok=true;
+      for(const ch of t){ if(VALID_PLATE_LETTERS.has(ch)){ out+=ch; } else { ok=false; break; } }
+      if(ok && out) return [{type:'let', value:out}];
+    }
+    // Whole plate typed/pasted/said as ONE piece, letters and digits mixed together exactly like
+    // the real plate reads ("بحط1996", "ABJ1996"...).
+    if(/[\u0621-\u064A0-9\u0660-\u0669A-Za-z]/.test(t)){
+      const extracted = extractLettersDigits(t);
+      const events = [];
+      if(extracted.letters) events.push({type:'let', value:extracted.letters});
+      if(extracted.digits) events.push({type:'num', value:extracted.digits});
+      if(events.length) return events;
+    }
+    return [];
+  }
+  function parseSpokenText(text){
+    const tokens = (text||'').replace(/[،,]/g,' ').trim().split(/\s+/).filter(Boolean);
+    let numberStr='', lettersStr='';
+    for(const raw of tokens){
+      for(const ev of classifyToken(raw)){
+        if(ev.type==='num') numberStr += ev.value; else lettersStr += ev.value;
+      }
+    }
+    return {numberStr, lettersStr};
+  }
+  // Splits ONE continuous piece of speech/text into several complete plates, without relying on
+  // pauses at all (pause-based splitting is what caused a single plate's letters to get wrongly
+  // treated as separate plates before). Instead it tracks number+letters as they come in, and the
+  // moment the CURRENT plate already has both a number and letters, any further token starts a new
+  // plate — so "واحد اتنين تلاتة الف ب حاء واحد صفر خمسة سين ب حاء" cleanly becomes two plates.
+  function segmentPlatesFromText(text){
+    const tokens = (text||'').replace(/[،,]/g,' ').trim().split(/\s+/).filter(Boolean);
+    const groups = [];
+    let cur = {numberStr:'', lettersStr:''};
+    let phase = null;        // 'num' or 'let' — whichever type we're currently accumulating for cur
+    let sawBothTypes = false; // whether cur has already collected both a number part and a letters part
+    for(const raw of tokens){
+      for(const ev of classifyToken(raw)){
+        if(phase===null){
+          phase = ev.type;
+        }else if(ev.type!==phase){
+          if(sawBothTypes){
+            // switching type a second time means cur is a finished plate and this token starts a new one
+            groups.push(cur);
+            cur = {numberStr:'', lettersStr:''};
+            sawBothTypes = false;
+          }else{
+            sawBothTypes = true;
+          }
+          phase = ev.type;
+        }
+        if(ev.type==='num') cur.numberStr += ev.value; else cur.lettersStr += ev.value;
+      }
+    }
+    if(cur.numberStr || cur.lettersStr) groups.push(cur);
+    return groups;
+  }
+
+  function plateChipHTML(car){
+    const tagClass = statusTagClass(car.status);
+    return `<div class="plate-chip">
+      <span class="flag">السعودية</span>
+      <div class="p-num">${escapeHtml(car.number)}</div>
+      <div class="p-let">${escapeHtml(car.letters.split('').join(' '))}</div>
+      <div class="p-tag ${tagClass}">${car.status}</div>
+    </div>`;
+  }
+  function miniPillHTML(car){
+    const cls = statusTagClass(car.status);
+    return `<span class="mini-pill ${cls}"><span class="ltr">${escapeHtml(car.number)}</span> ${escapeHtml(car.letters.split('').join(' '))} — ${car.status}</span>`;
+  }
+  function mapLink(location){
+    if(!location) return '';
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+  }
+  function shareWhatsapp(car){
+    let msg = `🚨 لوحة مطلوبة\nرقم: ${car.number}\nحروف: ${spacedLetters(car.letters)}\n`;
+    if(car.notes) msg += `ملاحظات: ${car.notes}\n`;
+    if(car.location) msg += `الموقع: ${car.location}\n`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
+  function upsertCar(number, letters, status, notes, location){
+    letters = normLetters(letters);
+    const existing = cars.find(c=> c.number===number && normLetters(c.letters)===letters);
+    const now = Date.now();
+    if(existing){
+      existing.status = status;
+      if(notes) existing.notes = notes;
+      if(location) existing.location = location;
+      existing.updatedAt = now;
+      return false;
+    }
+    cars.push({id:uid(), number, letters, status, notes: notes||'', location: location||'', createdAt: now, updatedAt: now});
+    return true;
+  }
+  function detectKey(row, subs){ return Object.keys(row).find(k => subs.some(s => k.includes(s))); }
+  function extractLettersDigits(raw){
+    const s = String(raw||'');
+    let letters = (s.match(/[\u0621-\u064A]/g)||[]).join('');
+    if(!letters){
+      // no Arabic letters found — try English letters (joined or spaced), mapped via the
+      // official Saudi plate Arabic↔Latin table
+      const enChars = s.match(/[A-Za-z]/g)||[];
+      let mapped = '', ok = true;
+      for(const ch of enChars){ const ar = EN_TO_AR[ch.toUpperCase()]; if(ar) mapped += ar; else { ok = false; } }
+      if(mapped) letters = mapped;
+    }
+    let digits = '';
+    for(const ch of s){
+      if(/[0-9]/.test(ch)) digits += ch;
+      else if(ARABIC_DIGITS[ch]!==undefined) digits += ARABIC_DIGITS[ch];
+    }
+    return {letters, digits};
+  }
+  // Picks the column that actually holds the plate, ignoring unrelated "رقم" columns
+  // (chassis number, contract number, phone number...) that real-world sheets often have too.
+  function findPlateColumnKey(row){
+    const keys = Object.keys(row);
+    let k = keys.find(k=> k.includes('لوحه') || k.includes('لوحة'));
+    if(k) return k;
+    k = keys.find(k=> k.includes('رقم') && !['شاص','عقد','هاتف','جوال','حساب','هويه','هوية'].some(bad=>k.includes(bad)));
+    if(k) return k;
+    return null;
+  }
+  function extractPlateFromRow(row){
+    const letKey = detectKey(row, ['حرف']);
+    const plateKey = findPlateColumnKey(row);
+    const noteKey = detectKey(row, ['ملاحظ']);
+    const locKey = detectKey(row, ['موقع','لوكيشن']);
+    const statKey = detectKey(row, ['حال','مطلوب']);
+    let number = '', letters = '';
+    if(letKey && plateKey && letKey!==plateKey){
+      // separate "letters" and "number" columns
+      letters = String(row[letKey]||'').trim();
+      number = String(row[plateKey]||'').trim();
+    }else if(plateKey){
+      // one merged column holding both letters and digits together, in any format/order
+      const parts = extractLettersDigits(row[plateKey]);
+      letters = parts.letters; number = parts.digits;
+      if(!letters && letKey) letters = String(row[letKey]||'').trim();
+    }else if(letKey){
+      letters = String(row[letKey]||'').trim();
+    }
+    if(!number && !letters) return null;
+    const statusRaw = statKey ? String(row[statKey]||'') : '';
+    const notes = noteKey ? String(row[noteKey]||'').trim() : '';
+    const location = locKey ? String(row[locKey]||'').trim() : '';
+    return {number, letters, statusRaw, notes, location};
+  }
+
+  async function handleExcelUpload(file){
+    try{
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, {type:'array'});
+      let added=0, updated=0, noLetters=0, totalRows=0;
+      wb.SheetNames.forEach(sheetName=>{
+        const sheet = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
+        rows.forEach(row=>{
+          const parsed = extractPlateFromRow(row);
+          if(!parsed) return;
+          totalRows++;
+          if(!parsed.letters) noLetters++;
+          // هذا الرفع مخصّص لقائمة اللوحات المطلوبة، فأي لوحة من غير عمود "الحالة" أو من غير كلمة "سليم" صريحة تتحسب مطلوبة
+          const status = parsed.statusRaw.includes('سليم') ? 'سليمة' : 'مطلوبة';
+          const isNew = upsertCar(parsed.number, parsed.letters, status, parsed.notes, parsed.location);
+          isNew ? added++ : updated++;
+        });
+      });
+      await saveCars();
+      renderAll();
+      await addLog({type:'استيراد ملف', said:`تم استيراد ${added+updated} لوحة من ${wb.SheetNames.length} ورقة، منها ${added} لوحة جديدة و${updated} لوحة اتحدّثت (${noLetters} من غير حروف)`, number:'', letters:'', status:'استيراد'});
+      // اتنقل على تاب "الكل" فورًا عشان تشوف اللوحات اللي اتستوردت وحروفها بعينك على طول، من غير ما تصدّق التوست بس
+      activateTab('stats');
+      if(totalRows>0 && noLetters/totalRows > 0.2){
+        toast(`تم استيراد ${added+updated} لوحة، بس ${noLetters} منها من غير حروف — راجع شكل عمود اللوحة في الملف`);
+      }else{
+        toast(`تم استيراد ${added+updated} لوحة (${added} جديدة، ${updated} تحديث) — شوفها تحت في تاب "الكل"`);
+      }
+    }catch(e){
+      toast('مقدرتش أقرا الملف، تأكد إنه إكسيل فيه أعمدة "رقم" و"حروف" و"الحالة"');
+    }
+  }
+
+  // Real plate letters are often remembered/heard in a different order than they're stored
+  // ("سبح" vs "بسح" vs "حبس" are the same three letters). So letter matching ignores order:
+  // same length → same letters rearranged; different length → the shorter one's letters must
+  // all be present in the longer one (still regardless of order).
+  function sortedChars(s){ return (s||'').split('').sort().join(''); }
+  function lettersMatch(a, b){
+    if(!a || !b) return false;
+    if(a.length===b.length) return sortedChars(a)===sortedChars(b);
+    const shorter = a.length<b.length ? a : b, longer = a.length<b.length ? b : a;
+    const pool = {};
+    for(const ch of longer) pool[ch] = (pool[ch]||0)+1;
+    for(const ch of shorter){ if(!pool[ch]) return false; pool[ch]--; }
+    return true;
+  }
+  // ---------- search: rebuilt around a clear "check المطلوبة first" design ----------
+  // Checking whether a plate is wanted NEVER looks at سليمة records — it only ever compares
+  // against the وانتد list. Only if a full plate (number+letters) genuinely isn't wanted does it
+  // get auto-filed under سليمة, and even then only after confirming no matching سليمة record
+  // already exists (so repeating the same search never creates duplicates).
+  function findWanted(numberStr, lettersStr){
+    return cars.find(c=> c.status==='مطلوبة' && c.number===numberStr && lettersMatch(normLetters(c.letters), lettersStr));
+  }
+  function findSafe(numberStr, lettersStr){
+    return cars.find(c=> c.status==='سليمة' && c.number===numberStr && lettersMatch(normLetters(c.letters), lettersStr));
+  }
+  function findByNumber(numberStr){ return cars.filter(c=> c.number && (c.number.includes(numberStr) || numberStr.includes(c.number))); }
+  function findByLetters(lettersStr){ return cars.filter(c=> lettersMatch(normLetters(c.letters), lettersStr)); }
+
+  // Stage 1: is it في المطلوبة؟ Stage 2: هل هي مسجلة سليمة بالفعل؟ Stage 3: تسجيل تلقائي كسليمة.
+  async function checkFullPlate(numberStr, lettersStr){
+    const wanted = findWanted(numberStr, lettersStr);
+    if(wanted) return {car: wanted, autoCreated:false};
+    const existingSafe = findSafe(numberStr, lettersStr);
+    if(existingSafe) return {car: existingSafe, autoCreated:false};
+    upsertCar(numberStr, lettersStr, 'سليمة', '', '');
+    await saveCars();
+    renderAll();
+    const newCar = cars.find(c=> c.number===numberStr && normLetters(c.letters)===normLetters(lettersStr));
+    await addLog({type:'تسجيل تلقائي', said:`اتسجلت اللوحة رقم ${numberStr} حروف ${spacedLetters(lettersStr)} تلقائي كسليمة لأنها مش موجودة في قائمة المطلوبة`, number:numberStr, letters:lettersStr, status:'سليمة'});
+    return {car:newCar, autoCreated:true};
+  }
+
+  function evaluateBroadSegment(text){
+    const {numberStr, lettersStr} = parseSpokenText(text);
+    let mode, matches=[];
+    if(!numberStr && !lettersStr){ mode='empty'; }
+    else if(numberStr && lettersStr){ mode='exact'; }
+    else if(numberStr){ mode='number'; matches = findByNumber(numberStr); }
+    else { mode='letters'; matches = findByLetters(lettersStr); }
+    return {text, numberStr, lettersStr, mode, matches};
+  }
+
+  function pushSessionResult(entry){
+    sessionResults.unshift(entry);
+    sessionCount = sessionResults.length; updateSessionPill(); renderSessionTable();
+  }
+  function renderSessionTable(){
+    const body = $('#session-table-body');
+    if(!sessionResults.length){ body.innerHTML = `<div class="empty-state">لسه مفيش لوحات — دوس المايك وابدأ الكلام</div>`; return; }
+    body.innerHTML = sessionResults.map(r=>{
+      const cls = statusTagClass(r.status);
+      return `<div class="session-row ${cls}"><span>${r.status==='مطلوبة'?'⚠️':'✅'} ${r.status}</span><span class="ltr">${escapeHtml(r.number)}</span><span>${escapeHtml(spacedLetters(r.letters))}</span></div>`;
+    }).join('');
+  }
+
+  async function runQuery(text){
+    text = (text||'').trim();
+    if(!text){ toast('قول أو اكتب حاجة الأول'); return; }
+    const r = evaluateBroadSegment(text);
+    let car = null, autoCreated = false;
+    if(r.mode==='exact'){
+      const res = await checkFullPlate(r.numberStr, r.lettersStr);
+      car = res.car; autoCreated = res.autoCreated;
+    }
+    renderResult(r.text, r.mode, r.numberStr, r.lettersStr, car, autoCreated);
+    const statusText = r.mode==='exact' ? car.status : (r.matches.length ? r.matches.map(m=>m.status).join('، ') : 'مفيش نتيجة');
+    await addLog({type:'بحث', said:text, number:r.numberStr, letters:r.lettersStr, status:statusText, mode:r.mode});
+    if(r.mode==='exact'){ pushSessionResult({status:car.status, number:car.number, letters:car.letters}); }
+  }
+
+  async function runQueries(texts){
+    texts = (texts||[]).map(t=>t.trim()).filter(Boolean);
+    if(!texts.length){ toast('قول أو اكتب حاجة الأول'); return; }
+    if(texts.length===1){ await runQuery(texts[0]); return; }
+    const results = [];
+    for(const text of texts){
+      const r = evaluateBroadSegment(text);
+      let car = null;
+      if(r.mode==='exact'){ const res = await checkFullPlate(r.numberStr, r.lettersStr); car = res.car; }
+      results.push(Object.assign(r, {car}));
+    }
+    renderBatchResults(results);
+    let anyWanted=false;
+    for(const r of results){
+      const statusText = r.mode==='exact' ? r.car.status : (r.matches.length ? r.matches.map(m=>m.status).join('، ') : 'مفيش نتيجة');
+      if(r.mode==='exact' && r.car.status==='مطلوبة') anyWanted=true;
+      await addLog({type:'بحث', said:r.text, number:r.numberStr, letters:r.lettersStr, status:statusText, mode:r.mode});
+      if(r.mode==='exact'){ pushSessionResult({status:r.car.status, number:r.car.number, letters:r.car.letters}); }
+    }
+    if(anyWanted){ alertBeep(); speak(`تنبيه، في لوحة مطلوبة ضمن ${results.length} لوحة قولتهم`); }
+    else{ safeChime(); speak(`تم فحص ${results.length} لوحة`); }
+  }
+
+  // Runs several ALREADY-SEPARATED plate groups (number+letters pairs), as produced by
+  // segmentPlatesFromText — used when several complete plates were said back to back in one
+  // recording with no commas and no pauses to rely on.
+  async function runQueriesFromGroups(groups){
+    const results = [];
+    for(const g of groups){
+      const res = await checkFullPlate(g.numberStr, g.lettersStr);
+      results.push({text:`${g.numberStr} ${spacedLetters(g.lettersStr)}`, numberStr:g.numberStr, lettersStr:g.lettersStr, mode:'exact', matches:[], car:res.car});
+    }
+    renderBatchResults(results);
+    let anyWanted=false;
+    for(const r of results){
+      if(r.car.status==='مطلوبة') anyWanted=true;
+      await addLog({type:'بحث', said:r.text, number:r.numberStr, letters:r.lettersStr, status:r.car.status, mode:'exact'});
+      pushSessionResult({status:r.car.status, number:r.car.number, letters:r.car.letters});
+    }
+    if(anyWanted){ alertBeep(); speak(`تنبيه، في لوحة مطلوبة ضمن ${results.length} لوحة قولتهم`); }
+    else{ safeChime(); speak(`تم فحص ${results.length} لوحة`); }
+  }
+
+  // The one entry point search/voice input goes through. It first respects any commas the person
+  // typed on purpose; failing that, it looks at the content itself for more than one COMPLETE
+  // plate (number+letters pattern repeating) and splits automatically — this is what lets someone
+  // say several plates back to back in a single recording and have each one recognized correctly.
+  async function processInputText(text){
+    text = (text||'').trim();
+    if(!text){ toast('قول أو اكتب حاجة الأول'); return; }
+    const commaSegments = text.split(/[،,;\n]+/).map(s=>s.trim()).filter(Boolean);
+    if(commaSegments.length > 1){ await runQueries(commaSegments); return; }
+    const groups = segmentPlatesFromText(text);
+    if(groups.length > 1){ await runQueriesFromGroups(groups); return; }
+    await runQuery(text);
+  }
+
+  function renderBatchResults(results){
+    const box = $('#pa-result');
+    box.innerHTML = `<div class="list-table">
+      <div class="batch-header"><span>اللي اتقال</span><span>النتيجة</span></div>
+      ${results.map(r=>{
+        let body;
+        if(r.mode==='empty') body = `<span class="muted">مقدرناش نفهم رقم أو حرف</span>`;
+        else if(r.mode==='exact') body = miniPillHTML(r.car);
+        else if(!r.matches.length) body = `<span class="muted">مفيش لوحات مشابهة</span>`;
+        else body = r.matches.map(miniPillHTML).join(' ');
+        return `<div class="batch-row"><span class="bidi">"${escapeHtml(r.text)}"</span><span>${body}</span></div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  function renderResult(text, mode, numberStr, lettersStr, car, autoCreated){
+    const box = $('#pa-result');
+    if(mode==='empty'){
+      box.innerHTML = `<div class="result-card"><div class="result-msg">مقدرتش أفهم رقم أو حرف من اللي اتقال</div><div class="result-sub bidi">حاول تاني وانطق الأرقام والحروف بوضوح</div></div>`;
+      speak('مقدرتش أفهم اللي اتقال، حاول تاني');
+      return;
+    }
+    if(mode==='exact'){
+      const cls = statusTagClass(car.status);
+      let msg;
+      if(car.status==='مطلوبة') msg = '🚨 السيارة دي مطلوبة!';
+      else msg = autoCreated ? '✅ مش موجودة في المطلوبة — اتسجلت دلوقتي كسليمة' : '✅ السيارة دي سليمة';
+      box.innerHTML = `<div class="result-card ${cls}">
+        ${plateChipHTML(car)}
+        <div class="result-msg ${cls}">${msg}</div>
+        <div class="result-sub bidi">اللي اتقال: "${escapeHtml(text)}"</div>
+      </div>`;
+      if(car.status==='مطلوبة'){ alertBeep(); speak('تنبيه، السيارة دي مطلوبة'); }
+      else{ safeChime(); speak('السيارة دي سليمة'); }
+      return;
+    }
+    const matches = mode==='number' ? findByNumber(numberStr) : (mode==='letters' ? findByLetters(lettersStr) : []);
+    if(!matches.length){
+      const what = mode==='number' ? `الرقم ${numberStr}` : `الحروف ${spacedLetters(lettersStr)}`;
+      box.innerHTML = `<div class="result-card"><div class="result-msg bidi">مفيش لوحات فيها ${escapeHtml(what)}</div></div>`;
+      speak('مفيش لوحات بالأرقام أو الحروف دي');
+      return;
+    }
+    box.innerHTML = `<div class="result-card">
+      <div class="result-msg">لقيت ${matches.length} لوحة فيها نفس ${mode==='number'?'الأرقام':'الحروف'}</div>
+      <div class="match-list">${matches.map(plateChipHTML).join('')}</div>
+    </div>`;
+    speak(`لقيت ${matches.length} لوحة`);
+  }
+
+  // ---------- rendering: counts / lists ----------
+  function renderCounts(){
+    $('#cnt-wanted').textContent = cars.filter(c=>c.status==='مطلوبة').length;
+    $('#cnt-safe').textContent = cars.filter(c=>c.status==='سليمة').length;
+    $('#cnt-log').textContent = log.length;
+  }
+
+  function matchesFilter(car, f){
+    if(!f) return true;
+    f = f.trim();
+    if(!f) return true;
+    return car.number.includes(f) || normLetters(car.letters).includes(f);
+  }
+
+  function carCardHTML(car, context){
+    const cls = statusTagClass(car.status);
+    const icon = car.status==='مطلوبة' ? '⚠️' : '✅';
+    let midBlock;
+    if(editingId===car.id){
+      midBlock = `<div class="pcard-edit">
+        <input type="text" class="notes-input" data-id="${car.id}" value="${escapeHtml(car.notes||'')}" placeholder="ملاحظة..."/>
+        <input type="text" class="location-input" data-id="${car.id}" value="${escapeHtml(car.location||'')}" placeholder="الموقع (عنوان أو إحداثيات)..."/>
+        <div class="edit-row">
+          <select class="status-select" data-id="${car.id}">${STATUSES.map(s=>`<option value="${s}" ${car.status===s?'selected':''}>${s}</option>`).join('')}</select>
+          <button class="loc-btn" data-id="${car.id}">📍 موقعي الحالي</button>
+        </div>
+        <div class="edit-btns">
+          <button class="pcard-btn save-edit-btn" data-id="${car.id}">✔ حفظ</button>
+          <button class="pcard-btn cancel-edit-btn" data-id="${car.id}">✕ إلغاء</button>
+        </div>
+      </div>`;
+    }else{
+      const bits=[];
+      if(car.notes) bits.push('📝 '+escapeHtml(car.notes));
+      if(car.location) bits.push(`📍 <a href="${mapLink(car.location)}" target="_blank" rel="noopener">${escapeHtml(car.location)}</a>`);
+      if(car.lastEditedBy) bits.push(`آخر تعديل: ${escapeHtml(car.lastEditedBy)}`);
+      midBlock = bits.length ? `<div class="pcard-sub bidi">${bits.join(' • ')}</div>` : '';
+    }
+    let actionsRow;
+    if(confirmDeleteId===car.id){
+      actionsRow = `<div class="pcard-actions"><span class="confirm-inline">متأكد من الحذف؟
+        <button class="pcard-btn danger-outline confirm-delete-btn" data-id="${car.id}">✅ تأكيد</button>
+        <button class="pcard-btn cancel-delete-btn" data-id="${car.id}">❌ إلغاء</button></span></div>`;
+    }else{
+      const btns = [
+        `<button class="pcard-btn danger-outline delete-btn" data-id="${car.id}">🗑 حذف</button>`,
+        `<button class="pcard-btn edit-btn" data-id="${car.id}">📝 تعديل</button>`
+      ];
+      if(car.status==='مطلوبة'){ btns.push(`<button class="pcard-btn whatsapp-outline whatsapp-btn" data-id="${car.id}">📤 مشاركة واتساب</button>`); }
+      actionsRow = `<div class="pcard-actions">${btns.join('')}</div>`;
+    }
+    const subLine = context==='wanted' ? `<div class="pcard-sub">تم رصدها في قاعدة البيانات</div>` : '';
+    return `<div class="pcard ${cls}" data-id="${car.id}">
+      <div class="pcard-top"><span class="pcard-status ${cls}">${icon} ${car.status}</span></div>
+      <div class="pcard-plate"><span class="ltr">${escapeHtml(car.number)}</span><span class="pcard-letters">${escapeHtml(car.letters.split('').join(' '))}</span></div>
+      ${editingId===car.id ? '' : subLine}
+      <div class="pcard-time bidi">${fmtDate(car.updatedAt||car.createdAt)}</div>
+      ${midBlock}
+      ${actionsRow}
+    </div>`;
+  }
+
+  function renderGrid(status, gridSel, context){
+    const filterInput = $(`.filter-input[data-status="${status}"]`);
+    const filterVal = filterInput ? filterInput.value : '';
+    const items = cars.filter(c=>c.status===status && matchesFilter(c, filterVal))
+      .sort((a,b)=> (b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0));
+    const grid = $(gridSel);
+    if(!grid) return;
+    grid.innerHTML = items.length ? items.map(c=>carCardHTML(c, context)).join('') : `<div class="empty-state">مفيش سيارات في القسم ده${filterVal?' مطابقة للبحث':''}</div>`;
+  }
+  function renderAllGrid(){
+    const items = cars.slice().sort((a,b)=> (b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0));
+    $('#grid-all').innerHTML = items.length ? items.map(c=>carCardHTML(c,'all')).join('') : `<div class="empty-state">لسه مفيش سيارات مسجلة في القاعدة</div>`;
+  }
+
+  function renderLists(){
+    renderGrid('مطلوبة', '#grid-مطلوبة', 'wanted');
+    renderGrid('سليمة', '#grid-سليمة', 'safe');
+    renderAllGrid();
+  }
+
+  function renderLog(){
+    const list = $('#log-list');
+    if(!log.length){ list.innerHTML = `<div class="empty-state">لسه مفيش نشاط متسجل</div>`; return; }
+    list.innerHTML = log.map(entry=>{
+      const cls = statusTagClass(entry.status);
+      const typeLabel = TYPE_LABELS[entry.type] || entry.type || 'بحث صوتي';
+      return `<div class="log-row">
+        <div class="log-time">${entry.time}</div>
+        <div class="log-mid">
+          <div class="log-type">${typeLabel}</div>
+          <div class="bidi">${entry.said?('"'+escapeHtml(entry.said)+'"'):''}</div>
+          <div class="log-by bidi">بواسطة: ${escapeHtml(entry.by||'مستخدم')}</div>
+        </div>
+        <div class="log-tag ${cls}" style="${cls?'':'background:var(--panel2);color:var(--muted)'}">${escapeHtml(entry.status||'')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function computeClarity(){
+    const searches = log.filter(l=>l.type==='بحث');
+    if(!searches.length) return 100;
+    const understood = searches.filter(l=> l.mode ? l.mode!=='empty' : true).length;
+    return Math.round((understood/searches.length)*100);
+  }
+
+  function renderStats(){
+    const grid = $('#stats-grid');
+    const wanted = cars.filter(c=>c.status==='مطلوبة').length;
+    const safe = cars.filter(c=>c.status==='سليمة').length;
+    const stats = [
+      [computeClarity()+'%','نسبة الوضوح'],
+      [safe,'سليمة'], [wanted,'مطلوبة'], [cars.length,'الإجمالي']
+    ];
+    grid.innerHTML = stats.map(s=>`<div class="stat-box"><div class="num">${s[0]}</div><div class="lbl">${s[1]}</div></div>`).join('');
+    renderHourlyChart();
+  }
+
+  function renderHourlyChart(){
+    const container = $('#chart-bars');
+    const today = new Date().toDateString();
+    const counts = {};
+    log.forEach(l=>{ if(l.type==='بحث' && new Date(l.ts).toDateString()===today){ const h=new Date(l.ts).getHours(); counts[h]=(counts[h]||0)+1; } });
+    const hours = Object.keys(counts).map(Number).sort((a,b)=>a-b);
+    if(!hours.length){ container.innerHTML = `<div class="empty-state" style="padding:24px">لسه مفيش عمليات بحث النهاردة</div>`; return; }
+    const max = Math.max(...hours.map(h=>counts[h]));
+    container.innerHTML = hours.map(h=>{
+      const pct = Math.max(20, Math.round((counts[h]/max)*100));
+      return `<div class="chart-bar-col">
+        <div class="chart-bar-track"><div class="chart-bar" style="height:${pct}%">${counts[h]}</div></div>
+        <div class="chart-hour ltr">${h}:00</div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderAll(){ renderCounts(); renderLists(); renderLog(); renderStats(); updateRecentList(); updateSessionPill(); renderSessionTable(); }
+
+  function updateRecentList(){
+    const dl = $('#pa-recent-list');
+    const recents = [];
+    for(const e of log){ if(e.type==='بحث' && e.said && !recents.includes(e.said)){ recents.push(e.said); if(recents.length>=8) break; } }
+    dl.innerHTML = recents.map(r=>`<option value="${escapeHtml(r)}"></option>`).join('');
+  }
+
+  function exportExcel(rows, filename){
+    if(!rows.length){ toast('مفيش بيانات عشان تتحمل'); return; }
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'بيانات');
+    XLSX.writeFile(wb, filename);
+  }
+  function carToRow(c){ return {'رقم اللوحة':c.number,'حروف اللوحة':spacedLetters(c.letters),'الحالة':c.status,'ملاحظات':c.notes||'','الموقع':c.location||''}; }
+  function carRows(status){ return cars.filter(c=>c.status===status).map(carToRow); }
+
+  function exportReport(days, filename){
+    const cutoff = days ? Date.now() - days*24*3600*1000 : 0;
+    const rows = log.filter(l=> l.ts >= cutoff);
+    if(!rows.length){ toast('مفيش نشاط في الفترة دي'); return; }
+    const summary = [
+      {'البند':'إجمالي السيارات','العدد':cars.length},
+      {'البند':'مطلوبة','العدد':cars.filter(c=>c.status==='مطلوبة').length},
+      {'البند':'سليمة','العدد':cars.filter(c=>c.status==='سليمة').length},
+      {'البند':'نسبة الوضوح','العدد':computeClarity()+'%'},
+      {'البند':'عمليات في الفترة دي','العدد':rows.length}
+    ];
+    const detail = rows.map(l=>({'الوقت':l.time,'النوع':TYPE_LABELS[l.type]||l.type||'بحث صوتي','اللي اتقال':l.said||'','الرقم':l.number||'','الحروف':spacedLetters(l.letters||''),'النتيجة':l.status||'','بواسطة':l.by||''}));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), 'ملخص');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detail), 'تفاصيل');
+    XLSX.writeFile(wb, filename);
+  }
+
+  function activateTab(name){
+    $$('.pa-tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+    $$('.pa-panel').forEach(p=>p.classList.toggle('active', p.id==='panel-'+name));
+    $$('.bn-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  }
+  $$('.pa-tab').forEach(btn=> btn.addEventListener('click', ()=> activateTab(btn.dataset.tab)));
+  $$('.bn-btn').forEach(btn=> btn.addEventListener('click', ()=> activateTab(btn.dataset.tab)));
+
+  // ---------- excel upload ----------
+  $('#pa-file-input').addEventListener('change', (e)=>{
+    const f = e.target.files[0];
+    if(f) handleExcelUpload(f);
+    e.target.value = '';
+  });
+  $('#inline-upload-wanted').addEventListener('click', ()=> $('#pa-file-input').click());
+
+  // ---------- search ----------
+  $('#pa-search-btn').addEventListener('click', ()=> processInputText($('#pa-text-input').value));
+  $('#pa-text-input').addEventListener('keydown', (e)=>{ if(e.key==='Enter') processInputText($('#pa-text-input').value); });
+  function updateParsePreview(){
+    const preview = $('#parse-preview');
+    const val = $('#pa-text-input').value;
+    if(!val.trim()){ preview.innerHTML = 'هفهم منها: —'; return; }
+    const commaParts = val.split(/[،,;\n]+/).map(s=>s.trim()).filter(Boolean);
+    let plateBlobs;
+    if(commaParts.length > 1){ plateBlobs = commaParts; }
+    else{
+      const groups = segmentPlatesFromText(commaParts[0] || val);
+      plateBlobs = groups.length > 1 ? groups.map(g=>`${g.numberStr} ${spacedLetters(g.lettersStr)}`.trim()) : commaParts;
+    }
+    const bits = plateBlobs.map(p=>{
+      const {numberStr, lettersStr} = parseSpokenText(p);
+      if(!numberStr && !lettersStr) return `<b>؟</b> (مفهمتش حاجة من "${escapeHtml(p)}")`;
+      const bitsInner = [];
+      if(numberStr) bitsInner.push(`رقم <b class="ltr">${escapeHtml(numberStr)}</b>`);
+      if(lettersStr) bitsInner.push(`حروف <b>${escapeHtml(spacedLetters(lettersStr))}</b>`);
+      return bitsInner.join(' — ');
+    });
+    const prefix = plateBlobs.length > 1 ? `هفهم منها ${plateBlobs.length} لوحة: ` : 'هفهم منها: ';
+    preview.innerHTML = prefix + bits.join(' | ');
+  }
+  $('#pa-text-input').addEventListener('input', updateParsePreview);
+  $('#undo-session-btn').addEventListener('click', ()=>{
+    if(!sessionResults.length){ toast('مفيش لوحات في الجلسة عشان نتراجع عنها'); return; }
+    sessionResults.shift();
+    sessionCount = sessionResults.length; updateSessionPill(); renderSessionTable();
+    toast('اتشالت آخر لوحة من نتائج الجلسة');
+  });
+
+  // ---------- filters ----------
+  $$('.filter-input').forEach(inp=> inp.addEventListener('input', renderLists));
+
+  // ---------- downloads / print ----------
+  $('#dl-wanted').addEventListener('click', ()=> exportExcel(carRows('مطلوبة'), 'سيارات_مطلوبة.xlsx'));
+  $('#dl-safe').addEventListener('click', ()=> exportExcel(carRows('سليمة'), 'سيارات_سليمة.xlsx'));
+  $('#dl-all').addEventListener('click', ()=> exportExcel(cars.map(carToRow), 'كل_السيارات.xlsx'));
+  $('#dl-wanted2').addEventListener('click', ()=> exportExcel(carRows('مطلوبة'), 'سيارات_مطلوبة.xlsx'));
+  $('#dl-safe2').addEventListener('click', ()=> exportExcel(carRows('سليمة'), 'سيارات_سليمة.xlsx'));
+  $('#dl-log').addEventListener('click', ()=> exportExcel(log.map(l=>({'الوقت':l.time,'النوع':TYPE_LABELS[l.type]||l.type||'بحث صوتي','اللي اتقال':l.said||'','الرقم':l.number||'','الحروف':spacedLetters(l.letters||''),'النتيجة':l.status||'','بواسطة':l.by||''})), 'سجل_النشاط.xlsx'));
+  $('#report-today').addEventListener('click', ()=> exportReport(1, 'تقرير_اليوم.xlsx'));
+  $('#report-week').addEventListener('click', ()=> exportReport(7, 'تقرير_الأسبوع.xlsx'));
+  $('#print-btn').addEventListener('click', ()=> window.print());
+
+  // ---------- car card actions (event delegation) ----------
+  document.addEventListener('click', async (e)=>{
+    if(!app.contains(e.target)) return;
+    const waBtn = e.target.closest('.whatsapp-btn');
+    if(waBtn){ const car = cars.find(c=>c.id===waBtn.dataset.id); if(car) shareWhatsapp(car); return; }
+    const editBtn = e.target.closest('.edit-btn');
+    if(editBtn){ editingId = editBtn.dataset.id; confirmDeleteId=null; renderLists(); return; }
+    const locBtn = e.target.closest('.loc-btn');
+    if(locBtn){
+      const id = locBtn.dataset.id;
+      if(!('geolocation' in navigator)){ toast('تحديد الموقع مش متاح في المتصفح ده'); return; }
+      navigator.geolocation.getCurrentPosition(
+        (pos)=>{ const input = $(`.location-input[data-id="${id}"]`); if(input) input.value = pos.coords.latitude.toFixed(6)+', '+pos.coords.longitude.toFixed(6); },
+        ()=>{ toast('مقدرش أوصل لموقعك، اكتب العنوان يدوي'); }
+      );
+      return;
+    }
+    const saveBtn = e.target.closest('.save-edit-btn');
+    if(saveBtn){
+      const id = saveBtn.dataset.id;
+      const notesInput = $(`.notes-input[data-id="${id}"]`);
+      const locInput = $(`.location-input[data-id="${id}"]`);
+      const statusSel = $(`.status-select[data-id="${id}"]`);
+      const car = cars.find(c=>c.id===id);
+      if(car){
+        car.notes = notesInput.value.trim();
+        car.location = locInput.value.trim();
+        if(statusSel && statusSel.value!==car.status){
+          const oldStatus = car.status; car.status = statusSel.value;
+          await addLog({type:'تعديل حالة', said:`اتغيّرت حالة اللوحة رقم ${car.number} حروف ${spacedLetters(car.letters)} من "${oldStatus}" إلى "${car.status}"`, number:car.number, letters:car.letters, status:car.status});
+        }
+        car.lastEditedBy = currentUser(); car.updatedAt = Date.now();
+        await saveCars();
+        await addLog({type:'تعديل بيانات', said:`تم تعديل بيانات اللوحة رقم ${car.number} حروف ${spacedLetters(car.letters)}`, number:car.number, letters:car.letters, status:car.status});
+      }
+      editingId = null; renderAll(); return;
+    }
+    const cancelBtn = e.target.closest('.cancel-edit-btn');
+    if(cancelBtn){ editingId = null; renderLists(); return; }
+    const delBtn = e.target.closest('.delete-btn');
+    if(delBtn){ confirmDeleteId = delBtn.dataset.id; editingId=null; renderLists(); return; }
+    const cancelDel = e.target.closest('.cancel-delete-btn');
+    if(cancelDel){ confirmDeleteId = null; renderLists(); return; }
+    const confirmDel = e.target.closest('.confirm-delete-btn');
+    if(confirmDel){
+      const id = confirmDel.dataset.id;
+      const car = cars.find(c=>c.id===id);
+      cars = cars.filter(c=>c.id!==id);
+      confirmDeleteId = null;
+      await saveCars(); renderAll();
+      if(car) await addLog({type:'حذف', said:`تم حذف اللوحة رقم ${car.number} حروف ${spacedLetters(car.letters)}`, number:car.number, letters:car.letters, status:'محذوفة'});
+      return;
+    }
+  });
+
+  // ---------- theme toggle ----------
+  function applyTheme(){
+    app.classList.toggle('theme-dark', settings.theme==='dark');
+    $('#theme-toggle').textContent = settings.theme==='dark' ? '☀️' : '🌙';
+  }
+  $('#theme-toggle').addEventListener('click', async ()=>{
+    settings.theme = settings.theme==='dark' ? 'light' : 'dark';
+    applyTheme(); await saveSettings();
+  });
+
+  // ---------- settings panel ----------
+  const gear = $('#settings-gear'), panel = $('#settings-panel');
+  gear.addEventListener('click', ()=>{
+    panel.classList.toggle('show');
+    $('#set-username').value = settings.userName||'';
+    $('#set-tts').checked = !!settings.ttsEnabled;
+  });
+  document.addEventListener('click', (e)=>{
+    if(panel.classList.contains('show') && !panel.contains(e.target) && e.target!==gear){ panel.classList.remove('show'); }
+  });
+  $('#set-username').addEventListener('change', async (e)=>{ settings.userName = e.target.value.trim(); await saveSettings(); });
+  $('#set-tts').addEventListener('change', async (e)=>{ settings.ttsEnabled = e.target.checked; await saveSettings(); toast(settings.ttsEnabled?'الصوت شغال':'الصوت متوقف'); });
+  $('#save-pin-btn').addEventListener('click', async ()=>{
+    const val = $('#set-pin').value.trim();
+    if(val.length<4){ toast('الرقم السري لازم يكون ٤ أرقام على الأقل'); return; }
+    settings.pin = val; await saveSettings(); $('#set-pin').value=''; toast('اتحفظ الرقم السري، هيتفعل من أول ما تفتح البرنامج تاني');
+  });
+  $('#remove-pin-btn').addEventListener('click', async ()=>{
+    settings.pin = null; await saveSettings(); toast('اتلغى القفل');
+  });
+  $('#clear-cars-btn').addEventListener('click', ()=>{ $('#clear-cars-confirm').style.display='block'; });
+  $('#clear-cars-no').addEventListener('click', ()=>{ $('#clear-cars-confirm').style.display='none'; });
+  $('#clear-cars-yes').addEventListener('click', async ()=>{
+    const count = cars.length;
+    cars = [];
+    editingId = null; confirmDeleteId = null; sessionResults = []; sessionCount = 0;
+    await saveCars();
+    renderAll();
+    $('#clear-cars-confirm').style.display='none';
+    panel.classList.remove('show');
+    await addLog({type:'حذف', said:`تم مسح كل اللوحات المسجلة (${count} لوحة) عشان تتحمّل من جديد`, number:'', letters:'', status:'مسح شامل'});
+    toast(`اتمسحت كل اللوحات (${count})، جاهزة ترفعي الملف من جديد`);
+  });
+
+  // ---------- lock screen ----------
+  function showLock(){
+    const overlay = document.createElement('div');
+    overlay.className='lock-overlay'; overlay.id='lock-overlay';
+    overlay.innerHTML = `<div class="lock-box">
+      <div class="lock-icon">🔒</div>
+      <h2>البرنامج مقفول</h2>
+      <p>اكتب الرقم السري عشان تدخل</p>
+      <input type="password" id="lock-pin-input" maxlength="6" inputmode="numeric" placeholder="••••"/>
+      <button id="lock-submit-btn">دخول</button>
+      <div class="lock-err" id="lock-err"></div>
+    </div>`;
+    app.appendChild(overlay);
+    $('#lock-submit-btn').addEventListener('click', tryUnlock);
+    $('#lock-pin-input').addEventListener('keydown', e=>{ if(e.key==='Enter') tryUnlock(); });
+    $('#lock-pin-input').focus();
+  }
+  function tryUnlock(){
+    const val = $('#lock-pin-input').value;
+    if(val === settings.pin){ $('#lock-overlay').remove(); }
+    else{ $('#lock-err').textContent='الرقم غلط، جرب تاني'; }
+  }
+
+  // ---------- speech recognition ----------
+  // Earlier versions auto-restarted listening after every pause so several plates could be said
+  // in one go, but a natural pause between two letters of the SAME plate (e.g. "س ... ب ... ح")
+  // was then treated as if 3 separate plates were said, because each restart's chunk got joined
+  // with "،" and that same "،" is what splits text into separate searches. That's what caused a
+  // single plate's letters to be searched one at a time and match huge numbers of unrelated cars.
+  // Fix: one tap now records one plate cleanly (pauses inside it are fine), full stop.
+  let recognition=null, listening=false;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const micBtn = $('#pa-mic-btn'), micStatus = $('#pa-mic-status'), heardLine = $('#heard-line');
+  if(SR){
+    recognition = new SR();
+    recognition.lang = 'ar-SA'; recognition.continuous = false; recognition.interimResults = true; recognition.maxAlternatives = 1;
+    recognition.onresult = (e)=>{
+      let interim = '', finalText = '';
+      for(let i=0; i<e.results.length; i++){
+        const res = e.results[i];
+        if(res.isFinal){ finalText += res[0].transcript; } else{ interim += res[0].transcript; }
+      }
+      const combined = (finalText || interim).trim();
+      $('#pa-text-input').value = combined;
+      updateParsePreview();
+      heardLine.textContent = 'سمعت: ' + (combined || '—');
+    };
+    recognition.onerror = (e)=>{
+      listening=false; micBtn.classList.remove('listening'); micStatus.textContent='دوس عشان تتكلم';
+      if(e.error!=='no-speech' && e.error!=='aborted') toast('مقدرش يوصل للميكروفون هنا، اكتب اللي عايز تقوله في الخانة تحت');
+    };
+    recognition.onend = async ()=>{
+      listening=false; micBtn.classList.remove('listening');
+      const text = $('#pa-text-input').value.trim();
+      if(text){ micStatus.textContent='بيتم المعالجة...'; await processInputText(text); }
+      micStatus.textContent='دوس عشان تتكلم';
+    };
+  }else{
+    micStatus.textContent = 'المتصفح ده مش بيدعم التعرف الصوتي (Web Speech API). جرب كروم على الموبايل أو اللابتوب، أو استخدم الإدخال اليدوي.';
+  }
+  micBtn.addEventListener('click', ()=>{
+    if(!recognition){ toast('الميكروفون مش متاح في المتصفح ده، استخدم خانة الكتابة'); return; }
+    if(listening){ recognition.stop(); return; }
+    $('#pa-text-input').value = ''; heardLine.textContent = 'سمعت: —';
+    try{
+      recognition.start(); listening=true; micBtn.classList.add('listening');
+      micStatus.textContent='بسمعك... قول رقم اللوحة وحروفها، أو أكتر من لوحة ورا بعض';
+    }catch(err){ toast('مقدرش يشغل الميكروفون، اكتب بدل كده'); }
+  });
+
+  // ---------- init ----------
+  (async function init(){
+    await loadSettings();
+    applyTheme();
+    await loadData();
+    if(settings.pin){ showLock(); }
+  })();
+})();
+</script>
+</body>
+</html>
